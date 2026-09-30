@@ -1,162 +1,45 @@
 package com.example.mercadopreso.data
 
+import android.content.Context
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import com.example.mercadopreso.data.model.Produto
-import com.example.mercadopreso.data.model.Review
+import org.json.JSONArray
 
 object ProductRepository {
-    val categorias = listOf("Todos",
-        "Eletrônicos",
-        "Informática",
-        "Games",
-        "Celulares",
-        "Moda",
-        "Casa")
-    val produtos = listOf(
-        Produto(1,
-            "Fone Bluetooth Pro",
-            "Fone sem fio com áudio imersivo, microfone integrado e bateria de longa duração. Ideal para música, estudos e chamadas.",
-            149.90,
-            "Eletrônicos",
-            4.8,
-            1240,
-            "🎧",
-            true,
-            199.90,
-            23),
-        Produto(2,
-            "Mouse Gamer Pulse",
-            "Mouse gamer ergonômico com sensor preciso, iluminação e botões configuráveis.",
-            89.90,
-            "Games",
-            4.7,
-            980,
-            "🖱️",
-            false,
-            119.90,
-            16),
-        Produto(3,
-            "Teclado Mecânico MK1",
-            "Teclado mecânico compacto, resistente e com resposta rápida para jogos e programação.",
-            219.90,
-            "Informática",
-            4.9,
-            730,
-            "⌨️",
-            true,
-            null,
-            8),
-        Produto(4,
-            "Smartphone Nova X",
-            "Smartphone com tela de alta definição, câmera avançada, 128 GB e bateria para o dia todo.",
-            1299.90,
-            "Celulares",
-            4.6,
-            520,
-            "📱",
-            true,
-            1499.90,
-            12),
-        Produto(5,
-            "Mochila Urban",
-            "Mochila resistente à água, com espaço para notebook e organização para estudos e trabalho.",
-            119.90,
-            "Moda",
-            4.8,
-            410,
-            "🎒",
-            false,
-            null,
-            19),
-        Produto(6,
-            "Smartwatch Fit",
-            "Relógio inteligente com monitoramento de atividades, notificações e bateria duradoura.",
-            199.90,
-            "Eletrônicos",
-            4.5,
-            360,
-            "⌚",
-            false,
-            249.90,
-            11),
-        Produto(7,
-            "Camiseta Essential",
-            "Camiseta básica de tecido confortável e corte versátil para o dia a dia.",
-            59.90,
-            "Moda",
-            4.7,
-            860,
-            "👕",
-            true,
-            null,
-            31),
-        Produto(8,
-            "Caixa de Som Mini",
-            "Caixa de som portátil compacta, Bluetooth e bateria para levar música para qualquer lugar.",
-            129.90,
-            "Casa",
-            4.6,
-            290,
-            "🔊",
-            false,
-            159.90,
-            14),
-        Produto(9,
-            "Luminária Desk",
-            "Luminária de mesa com intensidade ajustável e design compacto para estudos e trabalho.",
-            74.90,
-            "Casa",
-            4.5,
-            310,
-            "💡",
-            false,
-            null,
-            22),
-        Produto(10,
-            "Webcam Full HD",
-            "Webcam Full HD com microfone integrado para aulas, reuniões, streams e chamadas.",
-            159.90,
-            "Informática",
-            4.7,
-            410,
-            "📷",
-            true,
-            199.90,
-            9)
-    )
-    private val reviews = mutableMapOf(
-        1 to mutableListOf(Review("Lucas",
-                5,
-                "Som muito bom e bateria excelente."),
-            Review("Mariana",
-                5,
-                "Chegou rápido e funcionou perfeitamente."),
-            Review("Rafael",
-                4,
-                "Gostei bastante, só achei o encaixe diferente.")),
-        2 to mutableListOf(Review("João",
-                5,
-                "Muito preciso e confortável."),
-            Review("Ana",
-                4,
-                "Bom mouse pelo preço.")),
-        3 to mutableListOf(Review("Pedro",
-                5,
-                "Construção excelente e teclas muito boas."))
-    )
-    fun buscar(texto: String) = if(texto.isBlank()) produtos else produtos.filter {
-        it.nome.contains(texto,
-            true) || it.categoria.contains(texto,
-            true)
+    var produtos: List<Produto> by mutableStateOf(emptyList())
+        private set
+
+    val categorias
+        get() = listOf("Todos") + produtos.map { it.categoria }.distinct()
+
+    fun init(context: Context) {
+        val json =
+            JSONArray(context.assets.open("produtos.json").bufferedReader().use { it.readText() })
+        replace(json)
     }
-    fun find(id: Int) = produtos.firstOrNull {
-        it.id == id
+
+    fun replace(json: JSONArray) {
+        produtos =
+            (0 until json.length()).map { index ->
+                val p = json.getJSONObject(index)
+                Produto(
+                    p.getInt("id"),
+                    p.getString("nome"),
+                    p.getString("descricao"),
+                    p.getDouble("preco"),
+                    p.getString("categoria"),
+                    p.getDouble("avaliacao"),
+                    p.getInt("vendas"),
+                    p.getString("imagem"),
+                    p.getInt("estoque"),
+                    p.getBoolean("freteGratis"),
+                    if (p.isNull("precoOriginal")) null else p.getDouble("precoOriginal"),
+                    p.getDouble("pesoKg"),
+                )
+            }
     }
-    fun reviews(id: Int) = reviews[id].orEmpty()
-    fun addReview(id: Int,
-        review: Review) {
-        reviews.getOrPut(id) {
-            mutableListOf()
-        }.add(0,
-            review)
-    }
+
+    fun find(id: Int) = produtos.firstOrNull { it.id == id }
 }
